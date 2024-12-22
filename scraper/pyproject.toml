@@ -1,0 +1,24 @@
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["setuptools", "wheel", "pip"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "booking"
+version = "0.1.0"
+description = "Scrape data from Booking.com"
+readme = "README"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.12.3",
+    "numpy>=2.2.1",
+    "pandas>=2.2.3",
+    "pyarrow>=18.1.0",
+    "pydantic>=2.10.4",
+    "python-dateutil>=2.9.0.post0",
+    "requests>=2.32.3",
+    "setuptools>=75.6.0",
+    "typing-extensions>=4.12.2",
+]
