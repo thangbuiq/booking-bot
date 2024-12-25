@@ -7,7 +7,6 @@ from llama_index.core import PropertyGraphIndex
 from llama_index.core.llms import ChatMessage
 from llama_index.core.llms import LLM
 from llama_index.core.query_engine import CustomQueryEngine
-
 from recommendation.constants import ENTITIES_REGEXP_PATTERN
 from recommendation.storage import GraphRAGStore
 

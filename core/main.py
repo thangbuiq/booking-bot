@@ -3,14 +3,14 @@ from llama_index.core import PropertyGraphIndex
 from llama_index.core.schema import TextNode
 from llama_index.llms.openai import OpenAI
 
-from recommendation.constants import KG_TRIPLET_EXTRACT_TMPL
-from recommendation.extractor import GraphRAGExtractor
-from recommendation.helpers import parse_fn
-from recommendation.query_engine import RecommendationGraphRAGQueryEngine
-from recommendation.secrets import NEO4J_PASSWORD
-from recommendation.secrets import NEO4J_URL
-from recommendation.secrets import NEO4J_USERNAME
-from recommendation.storage import GraphRAGStore
+from core.recommendation.constants import KG_TRIPLET_EXTRACT_TMPL
+from core.recommendation.extractor import GraphRAGExtractor
+from core.recommendation.helpers import parse_fn
+from core.recommendation.query_engine import RecommendationGraphRAGQueryEngine
+from core.recommendation.secrets import NEO4J_PASSWORD
+from core.recommendation.secrets import NEO4J_URL
+from core.recommendation.secrets import NEO4J_USERNAME
+from core.recommendation.storage import GraphRAGStore
 
 llm = OpenAI(model="gpt-4o-mini")
 
