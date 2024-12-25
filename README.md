@@ -22,7 +22,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 # Create virtual environment.
 uv venv --python 3.11
 
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 - Install dependencies:
