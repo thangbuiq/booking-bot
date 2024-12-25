@@ -35,3 +35,5 @@ Format each relationship as ("relationship"$$$$$$$$$$$$$$$$)
 text: {text}
 ######################
 output:"""
+
+GRAPH_NETWORK_HTML_FILEPATH = "assets/graph_network.html"
