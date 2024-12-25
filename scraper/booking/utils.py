@@ -1,27 +1,31 @@
-from concurrent.futures import ThreadPoolExecutor, wait
-from datetime import datetime
 import csv
 import logging
 import multiprocessing as mp
 import os
 import re
-from typing import List, Optional, Dict, Any
-from urllib.parse import parse_qs, urlparse
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import wait
+from datetime import datetime
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from urllib.parse import parse_qs
+from urllib.parse import urlparse
 
 import numpy as np
 import requests
-from bs4 import BeautifulSoup, Tag
+from booking._constants import BASE_HEADERS
+from booking._constants import PROCESS_POOL_SIZE
+from booking._constants import SC__HOTEL_REVIEWS_PAGE
+from booking._constants import SC__MAX_RETIES
+from booking._constants import SC__OUTPUT_DIR
+from booking._constants import SC__REQUESTS_PER_SECOND
+from booking.models import ScraperConfig
+from booking.models import ScraperInput
+from bs4 import BeautifulSoup
+from bs4 import Tag
 from dateutil import parser
-
-from booking.models import ScraperInput, ScraperConfig
-from booking._constants import (
-    BASE_HEADERS,
-    PROCESS_POOL_SIZE,
-    SC__REQUESTS_PER_SECOND,
-    SC__MAX_RETIES,
-    SC__HOTEL_REVIEWS_PAGE,
-    SC__OUTPUT_DIR,
-)
 
 
 class ReviewScraper:

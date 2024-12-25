@@ -1,10 +1,9 @@
-from booking.utils import ReviewScraper
-
+import os
 from logging import Logger
 from typing import List
 
 import pandas as pd
-import os
+from booking.utils import ReviewScraper
 
 
 def scrape_reviews_of_hotel(
@@ -77,7 +76,6 @@ def get_hotel_list(csv_file: str) -> List[str]:
 
 
 if __name__ == "__main__":
-
     dir_path = os.path.dirname(__file__)
     input_path = os.path.join(dir_path, "input", "vn_hotels.csv")
     output_path = os.path.join(dir_path, "output", "vn_hotels_reviews.parquet")

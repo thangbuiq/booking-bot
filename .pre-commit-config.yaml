@@ -1,0 +1,36 @@
+default_language_version:
+  python: python3.11
+
+repos:
+  # Reorder python imports
+  - repo: https://github.com/asottile/reorder_python_imports
+    rev: v3.14.0
+    hooks:
+      - id: reorder-python-imports
+        args: [
+            "--py311-plus",
+          ]
+  
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+        args: [
+            "-r", # recursive
+            "--remove-all-unused-imports",
+            "--ignore-init-module-imports",
+            "--remove-unused-variables",
+            "--verbose",
+            "--in-place",
+          ]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.1
+    hooks:
+      # Run the ruff linter
+      - id: ruff
+        types_or: [python, pyi]
+        args: [--fix]
+      # Run the ruff formatter
+      - id: ruff-format
+        types_or: [python, pyi]
