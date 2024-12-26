@@ -42,4 +42,4 @@ output:"""
 
 GRAPH_NETWORK_HTML_FILEPATH = "assets/graph_network.html"
 
-DATA_FILE_PATH = "data/booking.parquet"
+DATA_FILE_PATH = "../data/booking.parquet"

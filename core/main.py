@@ -1,15 +1,16 @@
-from llama_index.llms.openai import OpenAI
+from llama_index.llms.groq import Groq
+from recommendation.constants import DATA_FILE_PATH
+from recommendation.helpers import read_data
+# from recommendation.helpers import create_recommendation_system
 
-from core.recommendation.constants import DATA_FILE_PATH
-from core.recommendation.helpers import create_recommendation_system
-from core.recommendation.helpers import read_data
+llm = Groq(model="llama3-8b-8192")
 
-llm = OpenAI(model="gpt-4o-mini")
+nodes = read_data(file_path=DATA_FILE_PATH)
 
-data = read_data(file_path=DATA_FILE_PATH)
+print(nodes)
 
-recommendation_query_engine = create_recommendation_system(nodes=data, llm=llm)
+# recommendation_query_engine = create_recommendation_system(nodes=data, llm=llm)
 
-response = recommendation_query_engine.query(
-    "What are the best places to visit in Paris?"
-)
+# response = recommendation_query_engine.query(
+#     "What are the best places to visit in Paris?"
+# )

@@ -7,16 +7,15 @@ import pandas as pd
 from llama_index.core import PropertyGraphIndex
 from llama_index.core.llms import LLM
 from llama_index.core.schema import TextNode
-
-from core.recommendation.constants import ENTITIES_RESPONSE_PATTERN
-from core.recommendation.constants import RECOMMENDATION_KG_EXTRACT_TMPL
-from core.recommendation.constants import RELATIONSHIPS_RESPONSE_PATTERN
-from core.recommendation.extractor import RecommendationGraphExtractor
-from core.recommendation.query_engine import RecommendationGraphRAGQueryEngine
-from core.recommendation.secrets import NEO4J_PASSWORD
-from core.recommendation.secrets import NEO4J_URL
-from core.recommendation.secrets import NEO4J_USERNAME
-from core.recommendation.storage import RecommendationGraphStore
+from recommendation.constants import ENTITIES_RESPONSE_PATTERN
+from recommendation.constants import RECOMMENDATION_KG_EXTRACT_TMPL
+from recommendation.constants import RELATIONSHIPS_RESPONSE_PATTERN
+from recommendation.extractor import RecommendationGraphExtractor
+from recommendation.query_engine import RecommendationGraphRAGQueryEngine
+from recommendation.secrets import NEO4J_PASSWORD
+from recommendation.secrets import NEO4J_URL
+from recommendation.secrets import NEO4J_USERNAME
+from recommendation.storage import RecommendationGraphStore
 
 
 def parse_fn(response_str: str) -> Tuple[List[Any], List[Any]]:
@@ -55,11 +54,34 @@ def read_data(file_path: str) -> List[TextNode]:
     Returns:
         List[TextNode]: The list of text nodes.
     """
-    bookings = pd.read_parquet(file_path)
-    nodes = [
-        TextNode(text=f"{row['title']}: {row['text']}")
-        for i, row in bookings.iterrows()
-    ]
+    # Read the data
+    bookings_df = pd.read_parquet(file_path)
+
+    # Construct LlamaIndex TextNodes
+    nodes = []
+    for _, row in bookings_df.iterrows():
+        review = row["reviews"]
+        nodes.append(
+            TextNode(
+                text=f"Hotel: {row['hotel_name']}, reviewed by User: {review['username']} | "
+                f"Review Title: {review['review_title']} | Review: {review['en_full_review']}",
+                metadata={
+                    "hotel": {"name": row["hotel_name"]},
+                    "user": {
+                        "username": review["username"],
+                        "country": review["user_country"],
+                    },
+                    "review": {
+                        "title": review["review_title"],
+                        "content": review["en_full_review"],
+                        "rating": review["rating"],
+                        "post_date": review["review_post_date"],
+                        "stay_duration": review["stay_duration"],
+                        "stay_type": review["stay_type"],
+                    },
+                },
+            )
+        )
 
     return nodes
 

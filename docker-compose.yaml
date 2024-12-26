@@ -7,15 +7,18 @@ services:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      - ./data:/data
-      - ./plugins:/plugins
+      - neo4j_data:/data
     environment:
       - NEO4J_apoc_export_file_enabled=true
       - NEO4J_apoc_import_file_enabled=true
       - NEO4J_apoc_import_file_use__neo4j__config=true
       - NEO4JLABS_PLUGINS=["apoc"]
+      - NEO4J_server_config_strict__validation_enabled=false
       - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
     env_file:
       - .env
     networks:
       - default
+
+volumes:
+  neo4j_data:

@@ -117,7 +117,7 @@ class RecommendationGraphRAGQueryEngine(CustomQueryEngine):
             str: The recommendations.
         """
         community_summary = self.graph_store.community_summaries.get(community_id, "")
-
+        entities_str = ", ".join(entities)
         messages = [
             ChatMessage(
                 role="system",
@@ -126,7 +126,7 @@ class RecommendationGraphRAGQueryEngine(CustomQueryEngine):
                     f"recommendations. Focus on items that match the query intent and have "
                     f"strong relationships within the community.\n\n"
                     f"Community Summary: {community_summary}\n"
-                    f"Query Entities: {', '.join(entities)}"
+                    f"Query Entities: {entities_str}"
                 ),
             ),
             ChatMessage(role="user", content=query_str),
@@ -165,8 +165,7 @@ class RecommendationGraphRAGQueryEngine(CustomQueryEngine):
                 content=(
                     f"Query: {query_str}\n\n"
                     f"Community Recommendations:\n"
-                    f"{'-' * 40}\n"
-                    f"{'\n'.join(community_recommendations)}"
+                    f"{'-' * 40}\n" + "\n".join(community_recommendations)
                 ),
             ),
         ]
