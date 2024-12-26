@@ -7,15 +7,22 @@ from typing import Tuple
 import networkx as nx
 from graspologic.partition import hierarchical_leiden
 from graspologic.partition import HierarchicalClusters
+from llama_index.core import Settings
 from llama_index.core.llms import ChatMessage
 from llama_index.graph_stores.neo4j import Neo4jPropertyGraphStore
-from llama_index.llms.openai import OpenAI
 
 
-class GraphRAGStore(Neo4jPropertyGraphStore):
-    community_summary = {}
-    entity_info = None
-    max_cluster_size = 5
+class RecommendationGraphStore(Neo4jPropertyGraphStore):
+    """
+    Extended graph store with recommendation-specific functionality.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.community_summaries = {}
+        self.entity_info = None
+        self.max_cluster_size = 5
+        self.similarity_threshold = 0.7
 
     def generate_community_summary(self, text: str) -> str:
         """
@@ -31,43 +38,54 @@ class GraphRAGStore(Neo4jPropertyGraphStore):
             ChatMessage(
                 role="system",
                 content=(
-                    "You are provided with a set of relationships from a knowledge graph, each represented as "
-                    "entity1->entity2->relation->relationship_description. Your task is to create a summary of these "
-                    "relationships. The summary should include the names of the entities involved and a concise synthesis "
-                    "of the relationship descriptions. The goal is to capture the most critical and relevant details that "
-                    "highlight the nature and significance of each relationship. Ensure that the summary is coherent and "
-                    "integrates the information in a way that emphasizes the key aspects of the relationships."
+                    "Analyze the following relationships and generate a summary focused on "
+                    "recommendation patterns. Include key features that drive recommendations, "
+                    "common preferences, and relationship strengths. Highlight any clusters "
+                    "or patterns that could be useful for making recommendations."
                 ),
             ),
             ChatMessage(role="user", content=text),
         ]
-        response = OpenAI(model="gpt-4o-mini").chat(messages=messages)
+        response = Settings.llm.chat(messages)
         clean_reponse = re.sub(r"^assistant:\s*", "", str(response)).strip()
 
         return clean_reponse
 
-    def build_communities(self) -> None:
+    def build_recommendation_communities(self) -> None:
         """
-        Build communities from the graph and summarize them.
+        Build communities optimized for recommendations.
         """
-        graph = self._build_graph()
+        graph = self._create_weighted_graph()
         community_hierarchical_clusters = hierarchical_leiden(
-            graph, max_cluster_size=self.max_cluster_size
+            graph, max_cluster_size=self.max_cluster_size, resolution=1.0
         )
         self.entity_info, community_info = self._collect_community_info(
             graph=graph, clusters=community_hierarchical_clusters
         )
         self._summarize_communities(community_info=community_info)
 
-    def _build_nx_graph(self) -> nx.Graph:
+    def _create_weighted_graph(self) -> nx.Graph:
         """
         Build a NetworkX graph from the graph store.
 
         Returns:
             nx.Graph: A NetworkX graph.
         """
-        graph = nx.Graph()
-        return graph
+        nx_graph = nx.Graph()
+        triplets = self.get_triplets()
+
+        for entity1, relation, entity2 in triplets:
+            weight = relation.properties.get("strength", 0.5)
+            nx_graph.add_edge(
+                relation.source_id,
+                relation.target_id,
+                weight=weight,
+                relationship=relation.label,
+                description=relation.properties["description"],
+                features=relation.properties.get("features", ""),
+            )
+
+        return nx_graph
 
     def _collect_community_info(
         self, graph: nx.Graph, clusters: HierarchicalClusters

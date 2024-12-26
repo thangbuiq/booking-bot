@@ -21,29 +21,11 @@ from llama_index.core.schema import TransformComponent
 nest_asyncio.apply()
 
 
-class GraphRAGExtractor(TransformComponent):
-    """Extract triples from a graph.
-
-    Uses an LLM and a simple prompt + output parsing to extract paths (i.e. triples) and entity, relation descriptions from text.
-
-    Args:
-        llm (LLM):
-            The language model to use.
-        extract_prompt (Union[str, PromptTemplate]):
-            The prompt to use for extracting triples.
-        parse_fn (callable):
-            A function to parse the output of the language model.
-        num_workers (int):
-            The number of workers to use for parallel processing.
-        max_paths_per_chunk (int):
-            The maximum number of paths to extract per chunk.
+class RecommendationGraphExtractor(TransformComponent):
     """
-
-    llm: LLM
-    extract_prompt: PromptTemplate
-    parse_fn: Callable
-    num_workers: int
-    max_paths_per_chunk: int
+    Extract triples from a graph.
+    Uses an LLM and a simple prompt + output parsing to extract paths (i.e. triples) and entity, relation descriptions from text.
+    """
 
     def __init__(
         self,
@@ -116,34 +98,37 @@ class GraphRAGExtractor(TransformComponent):
                 text=text,
                 max_knowledge_triplets=self.max_paths_per_chunk,
             )
-            entities, entities_relationship = self.parse_fn(llm_reponse)
+            entities, relationships = self.parse_fn(llm_reponse)
         except ValueError:
-            entities, entities_relationship = [], []
+            entities, relationships = [], []
 
         existing_nodes = node.metadata.pop(KG_NODES_KEY, [])
-        existing_relations = node.metadata.pop(KG_RELATIONS_KEY, [])
         entity_metadata = node.metadata.copy()
-        for entity, entity_type, description in entities:
-            entity_metadata["entity_description"] = description
+        for entity, entity_type, description, attributes in entities:
+            entity_metadata = {
+                "description": description,
+                "attributes": attributes,
+                "type": entity_type,
+                "embedding_key": f"{entity_type}_{entity}",
+            }
             entity_node = EntityNode(
-                name=entity,
-                label=entity_type,
-                properties=entity_metadata,
+                name=entity, label=entity_type, properties=entity_metadata
             )
             existing_nodes.append(entity_node)
 
-        relation_metadata = node.metadata.copy()
-        for triple in entities_relationship:
-            subj, obj, rel, description = triple
-            relation_metadata["relationship_description"] = description
-            rel_node = Relation(
-                label=rel,
-                source_id=subj,
-                target_id=obj,
-                properties=relation_metadata,
+        existing_relations = node.metadata.pop(KG_RELATIONS_KEY, [])
+        for src, tgt, rel, strength, desc, features in relationships:
+            relation_metadata = {
+                "description": desc,
+                "strength": float(strength),
+                "features": features,
+                "source_type": next((e[1] for e in entities if e[0] == src), None),
+                "target_type": next((e[1] for e in entities if e[0] == tgt), None),
+            }
+            relation = Relation(
+                label=rel, source_id=src, target_id=tgt, properties=relation_metadata
             )
-
-            existing_relations.append(rel_node)
+            existing_relations.append(relation)
 
         node.metadata[KG_NODES_KEY] = existing_nodes
         node.metadata[KG_RELATIONS_KEY] = existing_relations
