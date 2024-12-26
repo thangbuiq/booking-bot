@@ -1,5 +1,5 @@
 services:
-  neo4j:
+  graphdb:
     image: neo4j:latest
     container_name: graphdb
     hostname: graphdb
