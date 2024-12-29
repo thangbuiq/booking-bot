@@ -1,6 +1,9 @@
-from typing import Literal, Optional
+from typing import Literal
+from typing import Optional
 
-from pydantic import BaseModel, Field, PositiveInt
+from pydantic import BaseModel
+from pydantic import Field
+from pydantic import PositiveInt
 
 
 class ScraperInput(BaseModel):

@@ -1,13 +1,14 @@
 import re
-from typing import Any, Dict, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 from llama_index.core import PropertyGraphIndex
-from llama_index.core.llms import LLM, ChatMessage
+from llama_index.core.llms import ChatMessage
+from llama_index.core.llms import LLM
 from llama_index.core.query_engine import CustomQueryEngine
-from recommendation.constants import (
-    ENTITIES_GRAPH_REGEXP_PATTERN,
-    TO_BE_CLEANED_RESPONSE,
-)
+from recommendation.constants import ENTITIES_GRAPH_REGEXP_PATTERN
+from recommendation.constants import TO_BE_CLEANED_RESPONSE
 from recommendation.storage import RecommendationGraphStore
 
 

@@ -3,25 +3,30 @@ import logging
 import multiprocessing as mp
 import os
 import re
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import wait
 from datetime import datetime
-from typing import Any, Dict, List, Optional
-from urllib.parse import parse_qs, urlparse
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from urllib.parse import parse_qs
+from urllib.parse import urlparse
 
 import numpy as np
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
+from bs4 import Tag
 from dateutil import parser
 
-from scraper.booking._constants import (
-    BASE_HEADERS,
-    PROCESS_POOL_SIZE,
-    SC__HOTEL_REVIEWS_PAGE,
-    SC__MAX_RETIES,
-    SC__OUTPUT_DIR,
-    SC__REQUESTS_PER_SECOND,
-)
-from scraper.booking.models.scraper import ScraperConfig, ScraperInput
+from scraper.booking._constants import BASE_HEADERS
+from scraper.booking._constants import PROCESS_POOL_SIZE
+from scraper.booking._constants import SC__HOTEL_REVIEWS_PAGE
+from scraper.booking._constants import SC__MAX_RETIES
+from scraper.booking._constants import SC__OUTPUT_DIR
+from scraper.booking._constants import SC__REQUESTS_PER_SECOND
+from scraper.booking.models.scraper import ScraperConfig
+from scraper.booking.models.scraper import ScraperInput
 
 
 def _setup_logger() -> logging.Logger:

@@ -1,18 +1,20 @@
 import re
-from typing import Any, List, Tuple
+from typing import Any
+from typing import List
+from typing import Tuple
 
 import pandas as pd
 from llama_index.core import PropertyGraphIndex
 from llama_index.core.llms import LLM
 from llama_index.core.schema import TextNode
-from recommendation.constants import (
-    ENTITIES_RESPONSE_PATTERN,
-    RECOMMENDATION_KG_EXTRACT_TMPL,
-    RELATIONSHIPS_RESPONSE_PATTERN,
-)
+from recommendation.constants import ENTITIES_RESPONSE_PATTERN
+from recommendation.constants import RECOMMENDATION_KG_EXTRACT_TMPL
+from recommendation.constants import RELATIONSHIPS_RESPONSE_PATTERN
 from recommendation.extractor import RecommendationGraphExtractor
 from recommendation.query_engine import RecommendationGraphRAGQueryEngine
-from recommendation.secrets import NEO4J_PASSWORD, NEO4J_URL, NEO4J_USERNAME
+from recommendation.secrets import NEO4J_PASSWORD
+from recommendation.secrets import NEO4J_URL
+from recommendation.secrets import NEO4J_USERNAME
 from recommendation.storage import RecommendationGraphStore
 
 
