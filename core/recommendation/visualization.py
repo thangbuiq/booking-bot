@@ -1,5 +1,4 @@
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 import community as community_louvain
 import networkx as nx

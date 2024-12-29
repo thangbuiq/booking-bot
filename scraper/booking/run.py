@@ -1,9 +1,11 @@
+import argparse
 import os
 from logging import Logger
 from typing import List
 
 import pandas as pd
-from booking.utils import ReviewScraper
+
+from scraper.booking.utils import ReviewScraper
 
 
 def scrape_reviews_of_hotel(
@@ -16,7 +18,7 @@ def scrape_reviews_of_hotel(
     """To run the scrapper as module of a single hotel on Booking.com
 
     Args:
-        hotel_name: Hotel name from booking.com url
+        hotel_name: Hotel name from scraper.booking.com url
         country: "vn" in this case
         sort_by: Sort the reviews by  ['most_relevant', 'newest_first', 'oldest_first', 'highest_scores' or 'lowest_scores']
         n_reviews: -1 means scrape all.
@@ -45,7 +47,7 @@ def scrape_reviews_multiple_hotels(
     """To run the scrapper as module of a list of hotels on Booking.com
 
     Args:
-        hotels: List of hotel names from booking.com url
+        hotels: List of hotel names from scraper.booking.com url
         country: "vn" in this case
         sort_by: Sort the reviews by  ['most_relevant', 'newest_first', 'oldest_first', 'highest_scores' or 'lowest_scores']
         n_reviews: -1 means scrape all.
@@ -69,19 +71,57 @@ def scrape_reviews_multiple_hotels(
         return ls_reviews
 
 
-def get_hotel_list(csv_file: str) -> List[str]:
+def get_hotel_list(csv_file: str, filter_location: str = "Đà Lạt") -> List[str]:
     """Get a list of hotel names from a csv file"""
 
-    return pd.read_csv(csv_file)["hotel_slug"].tolist()
+    hotel_dataframes = pd.read_csv(csv_file)
+    hotel_dataframes = hotel_dataframes[hotel_dataframes["location"] == filter_location]
+    return hotel_dataframes["hotel_slug"].tolist()
 
 
 if __name__ == "__main__":
-    dir_path = os.path.dirname(__file__)
-    input_path = os.path.join(dir_path, "input", "vn_hotels.csv")
-    output_path = os.path.join(dir_path, "output", "vn_hotels_reviews.parquet")
+    parser = argparse.ArgumentParser(description="Scrape reviews from Booking.com")
+    parser.add_argument(
+        "--input_csv",
+        type=str,
+        default=os.path.join(os.path.dirname(__file__), "input", "vn_hotels.csv"),
+        help="Path to the input CSV file containing hotel information",
+    )
+    parser.add_argument(
+        "--output_parquet",
+        type=str,
+        default=os.path.join(
+            os.path.dirname(__file__), "output", "vn_hotels_reviews.parquet"
+        ),
+        help="Path to the output Parquet file to save the reviews",
+    )
+    parser.add_argument(
+        "--filter_location",
+        type=str,
+        default="Đà Lạt",
+        help="Location to filter hotels by",
+    )
+    parser.add_argument(
+        "--country",
+        type=str,
+        default="vn",
+        help="Country code for the hotels",
+    )
+    parser.add_argument(
+        "--n_reviews",
+        type=int,
+        default=20,
+        help="Number of reviews to scrape per hotel",
+    )
 
-    hotels = get_hotel_list(csv_file=input_path)
-    ls_reviews = scrape_reviews_multiple_hotels(hotels, country="vn", n_reviews=500)
+    args = parser.parse_args()
+
+    hotels = get_hotel_list(
+        csv_file=args.input_csv, filter_location=args.filter_location
+    )
+    ls_reviews = scrape_reviews_multiple_hotels(
+        hotels, country=args.country, n_reviews=args.n_reviews
+    )
 
     reviews_df = pd.DataFrame(ls_reviews)
-    reviews_df.to_parquet(path=output_path, index=False)
+    reviews_df.to_parquet(path=args.output_parquet, index=False)

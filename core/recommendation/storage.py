@@ -1,12 +1,9 @@
 import re
 from collections import defaultdict
-from typing import Any
-from typing import Dict
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 import networkx as nx
-from graspologic.partition import hierarchical_leiden
-from graspologic.partition import HierarchicalClusters
+from graspologic.partition import HierarchicalClusters, hierarchical_leiden
 from llama_index.core import Settings
 from llama_index.core.llms import ChatMessage
 from llama_index.graph_stores.neo4j import Neo4jPropertyGraphStore

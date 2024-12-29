@@ -3,29 +3,41 @@ import logging
 import multiprocessing as mp
 import os
 import re
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import wait
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from urllib.parse import parse_qs
-from urllib.parse import urlparse
+from typing import Any, Dict, List, Optional
+from urllib.parse import parse_qs, urlparse
 
 import numpy as np
 import requests
-from booking._constants import BASE_HEADERS
-from booking._constants import PROCESS_POOL_SIZE
-from booking._constants import SC__HOTEL_REVIEWS_PAGE
-from booking._constants import SC__MAX_RETIES
-from booking._constants import SC__OUTPUT_DIR
-from booking._constants import SC__REQUESTS_PER_SECOND
-from booking.models import ScraperConfig
-from booking.models import ScraperInput
-from bs4 import BeautifulSoup
-from bs4 import Tag
+from bs4 import BeautifulSoup, Tag
 from dateutil import parser
+
+from scraper.booking._constants import (
+    BASE_HEADERS,
+    PROCESS_POOL_SIZE,
+    SC__HOTEL_REVIEWS_PAGE,
+    SC__MAX_RETIES,
+    SC__OUTPUT_DIR,
+    SC__REQUESTS_PER_SECOND,
+)
+from scraper.booking.models.scraper import ScraperConfig, ScraperInput
+
+
+def _setup_logger() -> logging.Logger:
+    os.makedirs("logs", exist_ok=True)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
+    formatter = logging.Formatter(
+        "\033[1;32m%(asctime)s\033[0m - \033[1;34m%(name)s\033[0m - \033[1;31m%(levelname)s\033[0m - %(message)s"
+    )
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    return logger
 
 
 class ReviewScraper:
@@ -52,19 +64,7 @@ class ReviewScraper:
         self._log_input_params()
 
     def _setup_logger(self) -> logging.Logger:
-        os.makedirs("logs", exist_ok=True)
-        logger = logging.getLogger()
-        logger.setLevel(logging.INFO)
-
-        formatter = logging.Formatter(
-            "\033[1;32m%(asctime)s\033[0m - \033[1;34m%(name)s\033[0m - \033[1;31m%(levelname)s\033[0m - %(message)s"
-        )
-
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-
-        return logger
+        return _setup_logger()
 
     def _load_config(self) -> ScraperConfig:
         return ScraperConfig(

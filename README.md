@@ -1,10 +1,14 @@
-# Booking Recommendation Chatbot
+# DaLat Booking Recommendation Chatbot
 
-- This project is about booking hotels recommendation chatbot on Vietnamese hotels using GraphRag and Groq LLM.
+![GitHub](https://img.shields.io/github/license/thangbuiq/booking-bot) ![Python](https://img.shields.io/badge/python-3.11-blue) ![GitHub last commit](https://img.shields.io/github/last-commit/thangbuiq/booking-bot) ![GitHub top language](https://img.shields.io/github/languages/top/thangbuiq/booking-bot)
+
+- This project is about booking hotels recommendation chatbot on Vietnamese hotels using GraphRag.
 
 ## Usage
 
 ### Prerequisites
+
+#### 1. Python packages
 
 - Install package [uv](https://github.com/astral-sh/uv):
 
@@ -29,4 +33,32 @@ source .venv/bin/activate
 
 ```bash
 uv sync
+```
+
+#### 2. Services integration
+
+- Install [Docker](https://docs.docker.com/get-docker/).
+
+- Install `build-essential`:
+
+```bash
+sudo apt-get update && sudo apt-get install build-essential -y
+```
+
+- Create `.env` file:
+
+```bash
+cp .env.example .env
+
+# Then, update the values.
+```
+
+- Start services:
+
+```bash
+docker compose up -d
+
+# or
+
+make up
 ```
