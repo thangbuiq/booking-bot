@@ -1,22 +1,20 @@
 import asyncio
 from collections.abc import Callable
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import Any, List, Optional, Union
 
 import nest_asyncio
 from llama_index.core.async_utils import run_jobs
-from llama_index.core.graph_stores.types import EntityNode
-from llama_index.core.graph_stores.types import KG_NODES_KEY
-from llama_index.core.graph_stores.types import KG_RELATIONS_KEY
-from llama_index.core.graph_stores.types import Relation
+from llama_index.core.graph_stores.types import (
+    KG_NODES_KEY,
+    KG_RELATIONS_KEY,
+    EntityNode,
+    Relation,
+)
 from llama_index.core.indices.property_graph import default_parse_triplets_fn
 from llama_index.core.llms import LLM
 from llama_index.core.prompts import PromptTemplate
 from llama_index.core.prompts.default_prompts import DEFAULT_KG_TRIPLET_EXTRACT_PROMPT
-from llama_index.core.schema import BaseNode
-from llama_index.core.schema import TransformComponent
+from llama_index.core.schema import BaseNode, TransformComponent
 
 nest_asyncio.apply()
 

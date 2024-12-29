@@ -1,8 +1,5 @@
 # User-specific files
-scraper/booking/output/*.pq
-scraper/booking/output/*.csv
-scraper/booking/output/*.json
-scraper/booking/output/*.parquet
+scraper/booking/output/warehouse/*.parquet
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

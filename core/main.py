@@ -1,6 +1,7 @@
 from llama_index.llms.groq import Groq
 from recommendation.constants import DATA_FILE_PATH
 from recommendation.helpers import read_data
+
 # from recommendation.helpers import create_recommendation_system
 
 llm = Groq(model="llama3-8b-8192")

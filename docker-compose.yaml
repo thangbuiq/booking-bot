@@ -1,8 +1,8 @@
 services:
-  graphdb:
-    image: neo4j:latest
-    container_name: graphdb
-    hostname: graphdb
+  neo4j:
+    image: neo4j:5.26.0-community-bullseye
+    container_name: neo4j
+    hostname: neo4j
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -20,5 +20,23 @@ services:
     networks:
       - default
 
+  postgres:
+    image: postgres:14-alpine
+    container_name: postgres
+    hostname: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - default
+
 volumes:
   neo4j_data:
+  postgres_data:

@@ -1,8 +1,0 @@
-Booking.com Scraper Module
-
-Run this command to install the dependencies:
-
-```bash
-uv sync
-```
-
