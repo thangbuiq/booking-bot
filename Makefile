@@ -13,3 +13,6 @@ format:
 
 transform:
 	uv run scraper/booking/transform.py
+
+load:
+	uv run core/graphdb.py

@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import pandas as pd
 
@@ -7,12 +8,11 @@ from scraper.booking.models.reviews import Reviews
 from scraper.booking.models.users import Users
 from scraper.booking.utils import _setup_logger
 
-
 logger = _setup_logger()
 
 
 class BaseWarehouse:
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: Optional[pd.DataFrame] = None):
         """
         Initialize the warehouse class with the data and output directory
 

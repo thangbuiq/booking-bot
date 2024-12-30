@@ -87,7 +87,7 @@ scraper/booking/output/warehouse/fact_review.parquet
 - Load the data into Neo4j:
 
 ```bash
-python3 core/graphdb.py
+make load
 ```
 
 - If you receive something like this, it means the data is loaded successfully:
