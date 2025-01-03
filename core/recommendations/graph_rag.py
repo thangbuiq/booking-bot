@@ -1,11 +1,15 @@
 from typing import Any, Dict, List
+
 import openai
-from core.recommendations.base import BaseHotelRecommender
 from neo4j.exceptions import Neo4jError
+
+from core.recommendations.base import BaseHotelRecommender
 
 
 class GraphRAGHotelRecommender(BaseHotelRecommender):
-    def __init__(self, uri: str, username: str, password: str, openai_model: str):
+    def __init__(
+        self, uri: str, username: str, password: str, openai_model: str = "gpt-4o-mini"
+    ):
         """
         Initialize the GraphRAGHotelRecommender.
 
@@ -13,10 +17,14 @@ class GraphRAGHotelRecommender(BaseHotelRecommender):
             uri (str): URI for the Neo4j database.
             username (str): Username for the Neo4j database.
             password (str): Password for the Neo4j database.
-            openai_model (str): OpenAI model to use for LLM operations.
+            openai_model (str): OpenAI model to use for LLM operations. Defaults to "gpt-4o-mini".
         """
         super().__init__(uri=uri, username=username, password=password)
         self.openai_model = openai_model
+
+        # Detect communities and summarize them
+        self.communities = self.communities_detection()
+        self.summaries = self.communities_summarization(self.communities)
 
     def _create_constraints(self):
         """
@@ -24,7 +32,9 @@ class GraphRAGHotelRecommender(BaseHotelRecommender):
         """
         return super()._create_constraints()
 
-    def communities_detection(self, graph_name: str = 'hotelCommunityGraph') -> Dict[str, Any]:
+    def communities_detection(
+        self, graph_name: str = "hotelCommunityGraph"
+    ) -> Dict[str, Any]:
         """
         Detect communities within the graph database using Louvain algorithm.
 
@@ -86,10 +96,12 @@ class GraphRAGHotelRecommender(BaseHotelRecommender):
                     RETURN community, nodes, relationships
                     ORDER BY community
                 """)
-                
+
                 communities = {}
                 for record in result:
-                    unique_nodes = {node['id']: node for node in record["nodes"]}.values()
+                    unique_nodes = {
+                        node["id"]: node for node in record["nodes"]
+                    }.values()
                     communities[record["community"]] = {
                         "nodes": list(unique_nodes),
                         "relationships": record["relationships"],
@@ -99,7 +111,9 @@ class GraphRAGHotelRecommender(BaseHotelRecommender):
         except Neo4jError as e:
             raise RuntimeError(f"Error during community detection: {e}")
 
-    def communities_summarization(self, communities: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def communities_summarization(
+        self, communities: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
         Summarize detected communities using LLM.
 
@@ -127,10 +141,12 @@ class GraphRAGHotelRecommender(BaseHotelRecommender):
                     model=self.openai_model,
                     messages=[{"role": "system", "content": prompt}],
                 )
-                summaries.append({
-                    "community": community_id,
-                    "summary": response.choices[0].message.content.strip(),
-                })
+                summaries.append(
+                    {
+                        "community": community_id,
+                        "summary": response.choices[0].message.content.strip(),
+                    }
+                )
             except Exception as e:
                 raise RuntimeError(f"Error summarizing community {community_id}: {e}")
         return summaries
@@ -146,11 +162,8 @@ class GraphRAGHotelRecommender(BaseHotelRecommender):
             str: Recommendation response.
         """
         try:
-            communities = self.communities_detection()
-            summaries = self.communities_summarization(communities)
-
             summary_text = "\n".join(
-                f"Community {s['community']}: {s['summary']}" for s in summaries
+                f"Community {s['community']}: {s['summary']}" for s in self.summaries
             )
             prompt = (
                 "Using the following community summaries, generate a hotel recommendation "
@@ -165,6 +178,7 @@ class GraphRAGHotelRecommender(BaseHotelRecommender):
             return response.choices[0].message.content.strip()
         except Exception as e:
             raise RuntimeError(f"Error in recommending hotels: {e}")
+
 
 if __name__ == "__main__":
     recommender = GraphRAGHotelRecommender(

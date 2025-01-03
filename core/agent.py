@@ -27,7 +27,7 @@ class FunctionOutputEvent(Event):
     output: ToolOutput
 
 
-class FuncationCallingAgent(Workflow):
+class FunctionCallingAgent(Workflow):
     def __init__(
         self,
         *args: Any,

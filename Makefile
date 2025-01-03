@@ -31,3 +31,6 @@ reload:
 	make downv
 	make full-load
 
+.PHONY: recommend
+recommend:
+	uv run core/pipeline.py -m "$(message)"

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from neo4j import Session
@@ -10,7 +10,7 @@ class CypherGraphHotelRecommender(BaseHotelRecommender):
     def __init__(self, uri: str, username: str, password: str):
         """
         Initialize the CypherGraphHotelRecommender.
-        
+
         Args:
             uri (str): URI for the Neo4j database.
             username (str): Username for the Neo4j database.
@@ -36,7 +36,7 @@ class CypherGraphHotelRecommender(BaseHotelRecommender):
     def _create_static_nodes(self, session: Session) -> None:
         """
         Create static nodes in the Neo4j database.
-        
+
         Args:
             session: Neo4j session object.
         """
@@ -69,7 +69,7 @@ class CypherGraphHotelRecommender(BaseHotelRecommender):
     ) -> None:
         """
         Load data into the Neo4j database.
-        
+
         Args:
             hotels_df (pd.DataFrame): DataFrame containing hotel data.
             reviews_df (pd.DataFrame): DataFrame containing review data.
@@ -143,21 +143,21 @@ class CypherGraphHotelRecommender(BaseHotelRecommender):
     def recommend_hotels(
         self,
         amenities: List[str] = None,
-        stay_type: str = None,
-        stay_duration: str = None,
+        stay_type: Optional[str] = None,
+        stay_duration: Optional[str] = None,
         min_rating: float = 5.0,
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
         """
         Recommend hotels to users.
-        
+
         Args:
             amenities (List[str]): List of amenities to filter by.
             stay_type (str): Type of stay to filter by.
             stay_duration (str): Duration of stay to filter by.
             min_rating (float): Minimum rating for hotels.
             limit (int): Number of hotels to return.
-            
+
         Returns:
             List[Dict[str, Any]]: List of recommended hotels.
         """
@@ -202,3 +202,14 @@ class CypherGraphHotelRecommender(BaseHotelRecommender):
                 limit=limit,
             )
             return [dict(record) for record in results]
+
+
+if __name__ == "__main__":
+    recommender = CypherGraphHotelRecommender(
+        uri="bolt://localhost:7687", username="neo4j", password="password"
+    )
+
+    recommended_hotels = recommender.recommend_hotels(
+        amenities=["Air Conditioning", "TV"], stay_type=None, stay_duration=None
+    )
+    print(recommended_hotels)
