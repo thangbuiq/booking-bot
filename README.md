@@ -70,6 +70,15 @@ make up
 
 ### Initialize Neo4j Graph Database
 
+> [!IMPORTANT]
+> You can quickly start the services and load the data into the Neo4j database with the following command:
+>
+> ```bash
+> make full-load
+> ```
+
+#### Step by step
+
 - The above services are running, then initialize the dimension and fact data with:
 
 ```bash
