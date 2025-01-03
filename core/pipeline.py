@@ -3,8 +3,6 @@ import json
 import os
 from typing import Any, Dict, List
 
-import community.community_louvain as community_louvain
-import networkx as nx
 import openai
 from dotenv import load_dotenv
 from llama_index.core.tools import FunctionTool
@@ -83,6 +81,46 @@ class GraphRAG:
         recommender.close()
         return recommended_hotels
 
+    def global_answer(self, community_answers: List[Dict[str, Any]], query: str) -> str:
+        """
+        Step 2: Global answer
+        Synthesize community-level answers into a comprehensive response.
+
+        Args:
+            community_answers (List[Dict[str, Any]]): List of summaries or answers for each community.
+            query (str): The global query to be answered based on community-level information.
+
+        Returns:
+          str: The final synthesized global answer.
+        """
+        try:
+            final_response = openai.chat.completions.create(
+                model=self.openai_model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """
+                        Synthesize the following intermediate answers into a single, comprehensive response to the global query.
+                        The final response must:
+                        - Be concise yet thorough.
+                        - Address the query directly.
+                        - Integrate all relevant information from the intermediate answers.
+                        - Eliminate redundancy and ensure logical coherence.
+                        """,
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Query: {query}\nIntermediate Answers: {community_answers}",
+                    },
+                ],
+            )
+
+            return final_response.choices[0].message.content
+
+        except Exception as e:
+            print(f"Error generating global answer: {e}")
+            return "Unable to generate a global answer at this time."
+
     async def execute_pipeline(self, query: str):
         """
         Full pipeline execution starting from recommendations to insights.
@@ -91,8 +129,10 @@ class GraphRAG:
             query (str): Natural language query for the pipeline.
         """
         print("Parsing query...")
-        instances = await self.call_process_recommendations(query)
-        print(instances)
+        community_answers = await self.call_process_recommendations(query)
+
+        output = self.global_answer(community_answers=community_answers, query=query)
+        return output
 
 
 if __name__ == "__main__":
