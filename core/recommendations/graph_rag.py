@@ -18,152 +18,161 @@ class GraphRAGHotelRecommender(BaseHotelRecommender):
         super().__init__(uri=uri, username=username, password=password)
         self.openai_model = openai_model
 
-    def communities_detection(self, n: int = 10) -> List[Dict[str, Any]]:
+    def _create_constraints(self):
         """
-        Detect top n communities within the graph database using Neo4j's community detection algorithms.
+        Create constraints in the Neo4j database.
+        """
+        return super()._create_constraints()
+
+    def communities_detection(self, graph_name: str = 'hotelCommunityGraph') -> Dict[str, Any]:
+        """
+        Detect communities within the graph database using Louvain algorithm.
 
         Args:
-            n (int): The number of communities to detect.
+            graph_name (str): Name of the graph projection in Neo4j.
 
         Returns:
-            List[Dict[str, Any]]: List of detected communities with their respective nodes.
+            Dict[str, Any]: Communities with their nodes and relationships.
         """
         try:
             with self.driver.session() as session:
-                query = f"""
-                CALL gds.louvain.stream({{
-                    graphName: 'yourGraphName',
-                    maxCommunities: {n}
-                }})
-                YIELD nodeId, communityId AS community
-                RETURN gds.util.asNode(nodeId).name AS node, community
-                ORDER BY community
-                """
-                result = session.run(query)
+                # Check and create graph if necessary
+                result = session.run(f"""
+                    CALL gds.graph.exists('{graph_name}')
+                    YIELD exists
+                    RETURN exists
+                """)
+                graph_exists = result.single()["exists"]
+
+                if not graph_exists:
+                    session.run(f"""
+                        CALL gds.graph.project(
+                            '{graph_name}',
+                            '*',
+                            '*'
+                        )
+                    """)
+
+                # Run Louvain community detection
+                session.run(f"""
+                    CALL gds.louvain.write('{graph_name}', {{
+                        writeProperty: 'communityId'
+                    }})
+                """)
+
+                # Fetch communities with relationships
+                result = session.run("""
+                    MATCH (n)
+                    WHERE n.communityId IS NOT NULL
+                    WITH DISTINCT n.communityId AS community
+                    MATCH (n1)-[r]-(n2)
+                    WHERE n1.communityId = community AND n2.communityId = community
+                    WITH community,
+                         COLLECT(DISTINCT {
+                             id: id(n1),
+                             labels: labels(n1),
+                             properties: properties(n1)
+                         }) + COLLECT(DISTINCT {
+                             id: id(n2),
+                             labels: labels(n2),
+                             properties: properties(n2)
+                         }) AS nodes,
+                         COLLECT(DISTINCT {
+                             type: type(r),
+                             properties: properties(r),
+                             source: id(startNode(r)),
+                             target: id(endNode(r))
+                         }) AS relationships
+                    RETURN community, nodes, relationships
+                    ORDER BY community
+                """)
+                
                 communities = {}
                 for record in result:
-                    community = record["community"]
-                    node = record["node"]
-                    communities.setdefault(community, []).append(node)
+                    unique_nodes = {node['id']: node for node in record["nodes"]}.values()
+                    communities[record["community"]] = {
+                        "nodes": list(unique_nodes),
+                        "relationships": record["relationships"],
+                    }
+                return communities
 
-            return [{"community": k, "nodes": v} for k, v in communities.items()]
         except Neo4jError as e:
             raise RuntimeError(f"Error during community detection: {e}")
 
-    def communities_summarization(self, communities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def communities_summarization(self, communities: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Summarize detected communities using LLM.
 
         Args:
-            communities (List[Dict[str, Any]]): List of detected communities.
+            communities (Dict[str, Any]): Communities data.
 
         Returns:
-            List[Dict[str, Any]]: List of summaries for each community.
+            List[Dict[str, Any]]: Summaries for each community.
         """
         summaries = []
-        for community in communities:
+        for community_id, community_data in communities.items():
             try:
-                nodes = ", ".join(community["nodes"])
+                nodes = ", ".join(
+                    f"{node['properties'].get('name', 'Unknown')} ({', '.join(node['labels'])})"
+                    for node in community_data["nodes"]
+                )
                 prompt = (
                     "You are an AI assistant specializing in hotel recommendations. "
-                    "A community represents a group of hotels or places with shared characteristics. "
-                    "Summarize the characteristics of the hotels or places in this community based on the provided list of nodes. "
-                    "Be concise, relevant, and focus on recommendation purposes.\n\n"
-                    f"Community Nodes (hotels or places): {nodes}\n\n"
-                    "Provide a summary of the community for recommendation:"
+                    "Summarize the characteristics of the following hotels or places "
+                    "to support recommendations:\n\n"
+                    f"Community Nodes: {nodes}\n\n"
+                    "Provide a summary:"
                 )
-                response = openai.ChatCompletion.create(
+                response = openai.chat.completions.create(
                     model=self.openai_model,
-                    messages=[
-                        {"role": "system", "content": prompt}
-                    ],
+                    messages=[{"role": "system", "content": prompt}],
                 )
                 summaries.append({
-                    "community": community["community"],
+                    "community": community_id,
                     "summary": response.choices[0].message.content.strip(),
                 })
-            except openai.error.OpenAIError as e:
-                raise RuntimeError(f"Error summarizing community {community['community']}: {e}")
-
+            except Exception as e:
+                raise RuntimeError(f"Error summarizing community {community_id}: {e}")
         return summaries
 
-    def local_answer(self, community: Dict[str, Any], query: str) -> str:
+    def recommend_hotels(self, query: str) -> str:
         """
-        Generate a recommendation-specific response for a specific community.
+        Generate hotel recommendations based on the user's query.
 
         Args:
-            community (Dict[str, Any]): Community summary.
             query (str): User query.
 
         Returns:
-            str: Generated recommendation response.
+            str: Recommendation response.
         """
         try:
-            prompt = (
-                "You are an AI assistant specializing in personalized hotel recommendations. "
-                "Using the provided community summary and the user's preferences from their query, "
-                "recommend suitable hotels or places that best match the user's needs.\n\n"
-                f"User Query: {query}\nCommunity Summary: {community['summary']}\n\n"
-                "Generate a recommendation response:"
-            )
-            local_response = openai.ChatCompletion.create(
-                model=self.openai_model,
-                messages=[
-                    {"role": "system", "content": prompt}
-                ],
-            )
-            return local_response.choices[0].message.content.strip()
-        except openai.error.OpenAIError as e:
-            raise RuntimeError(f"Error generating local answer for community {community['community']}: {e}")
+            communities = self.communities_detection()
+            summaries = self.communities_summarization(communities)
 
-    def global_answer(self, communities_summarization: List[Dict[str, Any]], query: str) -> str:
-        """
-        Synthesize a global recommendation response from community-level summaries.
-
-        Args:
-            communities_summarization (List[Dict[str, Any]]): Summarized communities.
-            query (str): User query.
-
-        Returns:
-            str: Synthesized global recommendation response.
-        """
-        try:
-            summaries = "\n".join(
-                f"Community {community['community']}: {community['summary']}"
-                for community in communities_summarization
+            summary_text = "\n".join(
+                f"Community {s['community']}: {s['summary']}" for s in summaries
             )
             prompt = (
-                "You are an AI assistant tasked with synthesizing a comprehensive hotel recommendation response. "
-                "Use the provided community summaries and the user's preferences to create a coherent global answer. "
-                "Address the user's query by recommending hotels or places across all communities.\n\n"
-                f"User Query: {query}\n\nCommunity Summaries:\n{summaries}\n\n"
-                "Generate the global recommendation response:"
+                "Using the following community summaries, generate a hotel recommendation "
+                "based on the user's query:\n\n"
+                f"User Query: {query}\n\nCommunity Summaries:\n{summary_text}\n\n"
+                "Provide recommendations:"
             )
-            global_response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model=self.openai_model,
-                messages=[
-                    {"role": "system", "content": prompt}
-                ],
+                messages=[{"role": "system", "content": prompt}],
             )
-            return global_response.choices[0].message.content.strip()
-        except openai.error.OpenAIError as e:
-            raise RuntimeError(f"Error generating global answer: {e}")
-
-    def recommend_hotels(self, query: str, n: int = 10) -> List[Dict[str, Any]]:
-        """
-        Recommend hotels to users using the GraphRAG method.
-
-        Args:
-            query (str): User query.
-            n (int): The number of communities to detect.
-
-        Returns:
-            List[Dict[str, Any]]: List of recommended hotels.
-        """
-        try:
-            communities = self.communities_detection(n=n)
-            communities_summaries = self.communities_summarization(communities)
-            recommendations = self.global_answer(communities_summaries, query)
-            return recommendations
+            return response.choices[0].message.content.strip()
         except Exception as e:
             raise RuntimeError(f"Error in recommending hotels: {e}")
+
+if __name__ == "__main__":
+    recommender = GraphRAGHotelRecommender(
+        uri="bolt://localhost:7687",
+        username="neo4j",
+        password="password",
+        openai_model="gpt-4o-mini",
+    )
+    query = "I am looking for a hotel with a air conditioning and TV."
+    recommendation = recommender.recommend_hotels(query)
+    print(recommendation)
