@@ -78,6 +78,7 @@ class RecommendationPipeline:
             prompt = (
                 "Here are the raw recommendations:\n"
                 f"Recommendations: {final_recommendations}\n"
+                f"User Query: {query}\n\n"
                 "Your task is to format the output of the recommendations as per the following template. "
                 "Please strictly follow the below format and ensure the content is well-structured, clear, and concise:\n\n"
                 "1. **[Hotel Name]**: [Short description of the hotel]. Include key features and amenities such as [specific features mentioned in the query]. Provide a brief evaluation of the hotel and its suitability based on the query.\n"
@@ -92,6 +93,7 @@ class RecommendationPipeline:
                 "Make sure to strictly follow the structure and format in your response. Each recommendation should be clearly numbered "
                 "with the hotel's name in bold, followed by a concise description of the amenities and features. Ensure proper punctuation "
                 "and clarity in the sentences. The response should directly address the user's query while maintaining a professional tone."
+                "\nMUST return the total response matches the language of the User Query."
             )
 
             response = openai.chat.completions.create(
@@ -248,7 +250,6 @@ class RecommendationPipeline:
                 prompt += f"{i}. {rec}\n"
 
             prompt += "\nReturn the ranked recommendations as a numbered list."
-            prompt += "\nEnsure the total response matches the language of the User Query."
 
             # Use the LLM to rerank
             llm = OpenAI(self.openai_model)
