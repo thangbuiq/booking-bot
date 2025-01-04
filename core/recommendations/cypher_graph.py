@@ -1,20 +1,27 @@
-import argparse
-import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from dotenv import load_dotenv
-from neo4j import GraphDatabase
+from neo4j import Session
+
+from core.recommendations.base import BaseHotelRecommender
 
 
-class CypherGraphHotelRecommender:
+class CypherGraphHotelRecommender(BaseHotelRecommender):
     def __init__(self, uri: str, username: str, password: str):
-        self.driver = GraphDatabase.driver(uri, auth=(username, password))
+        """
+        Initialize the CypherGraphHotelRecommender.
 
-    def close(self) -> None:
-        self.driver.close()
+        Args:
+            uri (str): URI for the Neo4j database.
+            username (str): Username for the Neo4j database.
+            password (str): Password for the Neo4j database.
+        """
+        super().__init__(uri=uri, username=username, password=password)
 
     def _create_constraints(self) -> None:
+        """
+        Create constraints in the Neo4j database.
+        """
         with self.driver.session() as session:
             constraints = [
                 "CREATE CONSTRAINT IF NOT EXISTS FOR (h:Hotel) REQUIRE h.hotel_id IS UNIQUE",
@@ -26,7 +33,13 @@ class CypherGraphHotelRecommender:
             for constraint in constraints:
                 session.run(constraint)
 
-    def _create_static_nodes(self, session) -> None:
+    def _create_static_nodes(self, session: Session) -> None:
+        """
+        Create static nodes in the Neo4j database.
+
+        Args:
+            session: Neo4j session object.
+        """
         amenities = [
             "Air Conditioning",
             "TV",
@@ -54,6 +67,14 @@ class CypherGraphHotelRecommender:
         reviews_df: pd.DataFrame,
         batch_size: int = 1000,
     ) -> None:
+        """
+        Load data into the Neo4j database.
+
+        Args:
+            hotels_df (pd.DataFrame): DataFrame containing hotel data.
+            reviews_df (pd.DataFrame): DataFrame containing review data.
+            batch_size (int): Batch size for loading data
+        """
         self._create_constraints()
 
         reviews_df = reviews_df.dropna(subset=["stay_duration", "stay_type"])
@@ -122,11 +143,24 @@ class CypherGraphHotelRecommender:
     def recommend_hotels(
         self,
         amenities: List[str] = None,
-        stay_type: str = None,
-        stay_duration: str = None,
+        stay_type: Optional[str] = None,
+        stay_duration: Optional[str] = None,
         min_rating: float = 5.0,
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
+        """
+        Recommend hotels to users.
+
+        Args:
+            amenities (List[str]): List of amenities to filter by.
+            stay_type (str): Type of stay to filter by.
+            stay_duration (str): Duration of stay to filter by.
+            min_rating (float): Minimum rating for hotels.
+            limit (int): Number of hotels to return.
+
+        Returns:
+            List[Dict[str, Any]]: List of recommended hotels.
+        """
         matches = ["MATCH (h:Hotel)"]
 
         if amenities:
@@ -170,43 +204,12 @@ class CypherGraphHotelRecommender:
             return [dict(record) for record in results]
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Hotel Recommender CLI")
-    parser.add_argument("--load", action="store_true", help="Load data into Neo4j")
-    parser.add_argument(
-        "--hotels",
-        type=str,
-        help="Path to hotels parquet file",
-        default="data/vn_hotels.parquet",
-    )
-    parser.add_argument(
-        "--reviews",
-        type=str,
-        help="Path to reviews parquet file",
-        default="data/vn_hotels_reviews.parquet",
-    )
-    args = parser.parse_args()
-
-    load_dotenv()
-
-    recommender = CypherGraphHotelRecommender(
-        os.getenv("NEO4J_URI"), os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD")
-    )
-
-    if args.load and args.hotels and args.reviews:
-        hotels_df = pd.read_parquet(args.hotels)
-        reviews_df = pd.read_parquet(args.reviews)
-        recommender.load_data(hotels_df, reviews_df)
-        print("Data successfully loaded into Neo4j.")
-
-    results = recommender.recommend_hotels(
-        amenities=["Parking", "TV"], stay_type="Family", stay_duration="Long"
-    )
-    for result in results:
-        print(result)
-
-    recommender.close()
-
-
 if __name__ == "__main__":
-    main()
+    recommender = CypherGraphHotelRecommender(
+        uri="bolt://localhost:7687", username="neo4j", password="password"
+    )
+
+    recommended_hotels = recommender.recommend_hotels(
+        amenities=["Air Conditioning", "TV"], stay_type=None, stay_duration=None
+    )
+    print(recommended_hotels)

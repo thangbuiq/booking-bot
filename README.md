@@ -128,3 +128,10 @@ RETURN h.hotel_id as hotel_id, h.name as name
 LIMIT 5
 ```
 
+### Recommendation
+
+- Get the recommendations for a user query:
+
+```bash
+make recommend message="I am looking for a hotel with air conditioning and TV."
+```
