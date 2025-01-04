@@ -114,17 +114,6 @@ class RecommendationPipeline:
         Returns:
             List[Dict[str, Any]]: Recommended hotels.
         """
-        # """
-        # Process Cypher-based recommendations.
-
-        # Params:
-        #     - amenities: A list of required amenities.
-        #     - stay_type: Type of stay (e.g., Couple, Family).
-        #     - stay_duration: Duration of stay (e.g., Short, Medium).
-
-        # Returns:
-        #     List[Dict[str, Any]]: Structured element instances.
-        # """
         logger.info("Processing Cypher recommendations.")
 
         try:
@@ -259,6 +248,7 @@ class RecommendationPipeline:
                 prompt += f"{i}. {rec}\n"
 
             prompt += "\nReturn the ranked recommendations as a numbered list."
+            prompt += "\nEnsure the total response matches the language of the User Query."
 
             # Use the LLM to rerank
             llm = OpenAI(self.openai_model)
